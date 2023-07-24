@@ -1,17 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 
 namespace Topebox.Tankwars
 {
-    public class GameState : MonoBehaviour
+    public class GameState2 : MonoBehaviour
     {
         public Vector2 Player1Position;
         public Vector2 Player2Position;
@@ -19,13 +17,13 @@ namespace Topebox.Tankwars
         public GameConfig Config;
         public GameObject uiInput;
         
-        public Constants.CellType[,] logicMap;
-        public Cell[,] displayMap;
+        private Constants.CellType[,] logicMap;
+        private Cell[,] displayMap;
         public Cell cellPrefab;
 
-        public Tank tankPrefab;
-        public Tank player1Tank;
-        public Tank player2Tank;
+        public Tank1 tankPrefab;
+        public Tank1 player1Tank;
+        public Tank1 player2Tank;
         public Transform TankParent;
 
         public int CurrentPlayer = 1;
@@ -36,7 +34,6 @@ namespace Topebox.Tankwars
         public bool IsGameOver = false;
         public bool setMap = false;
         public bool started = false;
-        public bool playerDone = false;
         [FormerlySerializedAs("IsMoving")] public bool CanMove = false;
 
         public void UpdateMove()
@@ -75,7 +72,7 @@ namespace Topebox.Tankwars
                 var hasMoveP1 = HasValidMove(player1Tank.CurrentCell);
                 if (hasMoveP1)
                 {
-                    var move = UpdateMoveForTank(player1Tank);
+                    var move = UpdateMoveForTank(player1Tank, player2Tank);
                     Player1Moves.Add(move);
                 }
                 else
@@ -90,46 +87,20 @@ namespace Topebox.Tankwars
                 var hasMoveP2 = HasValidMove(player2Tank.CurrentCell);
                 if (hasMoveP2)
                 {
-                    var direction = Constants.Direction.NO;
-                    if (Input.GetKeyDown(KeyCode.W))
-                    {
-                        direction = Constants.Direction.UP;
-                    }
-                    else if (Input.GetKeyDown(KeyCode.S))
-                    {
-                        direction = Constants.Direction.DOWN;
-                    }
-                    else if (Input.GetKeyDown(KeyCode.A))
-                    {
-                        direction = Constants.Direction.LEFT;
-                    }
-                    else if (Input.GetKeyDown(KeyCode.D))
-                    {
-                        direction = Constants.Direction.RIGHT;
-                    }
-
-                    if (direction != Constants.Direction.NO)
-                    {
-                        var move = UpdateMoveForPlayer(player2Tank, direction);
-                        Player2Moves.Add(move);
-                        playerDone = true;
-                    }
+                    var move = UpdateMoveForTank(player2Tank, player1Tank);
+                    Player2Moves.Add(move);
                 }
                 else
                 {
                     //Debug.Log("No move left for player2 => player1 turn");
                 }
 
-                if (playerDone)
-                {
-                    playerDone = false;
-                    CurrentPlayer = player1Tank.PlayerId;
-                }
-                    
+                CurrentPlayer = player1Tank.PlayerId;
             }
+
         }
 
-        public Constants.GameResult CheckGameOver()
+        private Constants.GameResult CheckGameOver()
         {
             var hasMoveP1 = HasValidMove(player1Tank.CurrentCell);
             var hasMoveP2 = HasValidMove(player2Tank.CurrentCell);
@@ -155,7 +126,7 @@ namespace Topebox.Tankwars
             return Constants.GameResult.PLAYING; //not over
         }
 
-        public bool HasValidMove(Vector2 currentCell)
+        private bool HasValidMove(Vector2 currentCell)
         {
             var upCell = GetNextCell(currentCell, Constants.Direction.UP);
             if (IsValidCell(upCell))
@@ -184,10 +155,9 @@ namespace Topebox.Tankwars
             return false;
         }
 
-        public Vector2 UpdateMoveForTank(Tank currentTank)
+        public Vector2 UpdateMoveForTank(Tank1 currentTank, Tank1 otherTank)
         {
-            //var direction = (Constants.Direction)((ITuple)currentTank.Minimax(this, true))[1];
-            var direction = currentTank.GetNextMove(this);
+            var direction = currentTank.GetNextMove(this, logicMap, otherTank.CurrentCell);
             var nextCell = GetNextCell(currentTank.CurrentCell, direction);
             //CheckValidDirection
             if (IsValidCell(nextCell))
@@ -206,67 +176,14 @@ namespace Topebox.Tankwars
             }
             else
             {
-                // Debug.LogError(
-                //     $"Your Direction Is Invalid Direction:{direction} CurrentCell:{currentTank.CurrentCell}");
+                //Debug.LogError(
+                    //$"Your Direction Is Invalid Direction:{direction} CurrentCell:{currentTank.CurrentCell}");
             }
 
             return new Vector2(-1, -1);
         }
-        public Vector2 UpdateMoveForPlayer(Tank currentTank, Constants.Direction direction)
-        {
-            
-            var nextCell = GetNextCell(currentTank.CurrentCell, direction);
-                //CheckValidDirection
-            if (IsValidCell(nextCell))
-            {
-                currentTank.SetCurrentCell(nextCell);
 
-                var position = GetPosition(nextCell);
-                CanMove = false;
-                currentTank.transform.DORotate(GetRotateByDirection(direction), 0.5f);
-                currentTank.transform.DOMove(new Vector3(position.x, position.y, 0), 1f).OnComplete(() =>
-                {
-                    CanMove = true;
-                    OccupyPosition(nextCell, currentTank.CurrentTank);
-                });
-                return nextCell;
-            }
-            else
-            {
-                    // Debug.LogError(
-                    //     $"Your Direction Is Invalid Direction:{direction} CurrentCell:{currentTank.CurrentCell}");
-            }
-            
-            return new Vector2(-1, -1);
-        }
-        public Vector2 UpdateMoveForAI(Tank currentTank, Constants.Direction direction)
-        {
-            
-            var nextCell = GetNextCell(currentTank.CurrentCell, direction);
-            //CheckValidDirection
-            if (IsValidCell(nextCell))
-            {
-                currentTank.SetCurrentCell(nextCell);
-
-                var position = GetPosition(nextCell);
-                CanMove = false;
-                //currentTank.transform.DORotate(GetRotateByDirection(direction), 0.5f);
-                //currentTank.transform.DOMove(new Vector3(position.x, position.y, 0), 1f).OnComplete(() =>
-                {
-                    CanMove = true;
-                    OccupyPositionAI(nextCell, currentTank.CurrentTank);
-                }//);
-                return nextCell;
-            }
-            else
-            {
-                // Debug.LogError(
-                //     $"Your Direction Is Invalid Direction:{direction} CurrentCell:{currentTank.CurrentCell}");
-                return new Vector2(-1, -1);
-            }
-        }
-
-        public Vector3 GetRotateByDirection(Constants.Direction direction)
+        private Vector3 GetRotateByDirection(Constants.Direction direction)
         {
             switch (direction)
             {
@@ -293,7 +210,7 @@ namespace Topebox.Tankwars
             return logicMap[(int)nextCell.x, (int)nextCell.y] == Constants.CellType.EMPTY;
         }
 
-        public void OccupyPosition(Vector2 cell, Constants.TankType tankType)
+        private void OccupyPosition(Vector2 cell, Constants.TankType tankType)
         {
             if (logicMap[(int)cell.x, (int)cell.y] == Constants.CellType.EMPTY)
             {
@@ -312,29 +229,11 @@ namespace Topebox.Tankwars
                 UpdateMap();
             }
         }
-        public void OccupyPositionAI(Vector2 cell, Constants.TankType tankType)
-        {
-            if (logicMap[(int)cell.x, (int)cell.y] == Constants.CellType.EMPTY)
-            {
-                switch (tankType)
-                {
-                    case Constants.TankType.RED:
-                        logicMap[(int)cell.x, (int)cell.y] = Constants.CellType.RED;
-                        IncreaseScoreAI(1, Constants.TankType.RED);
-                        break;
-                    case Constants.TankType.BLUE:
-                        logicMap[(int)cell.x, (int)cell.y] = Constants.CellType.BLUE;
-                        IncreaseScoreAI(1, Constants.TankType.BLUE);
-                        break;
-                }
-
-                //UpdateMap();
-            }
-        }
 
         public int ScoreRed = 0;
         public int ScoreBlue = 0;
-        public void IncreaseScore(int score, Constants.TankType tankType)
+
+        private void IncreaseScore(int score, Constants.TankType tankType)
         {
             switch (tankType)
             {
@@ -347,20 +246,6 @@ namespace Topebox.Tankwars
             }
 
             UpdateScoreUI();
-        }
-        public void IncreaseScoreAI(int score, Constants.TankType tankType)
-        {
-            switch (tankType)
-            {
-                case Constants.TankType.RED:
-                    ScoreRed += score;
-                    break;
-                case Constants.TankType.BLUE:
-                    ScoreBlue += score;
-                    break;
-            }
-
-            //UpdateScoreUI();
         }
 
 
@@ -387,6 +272,7 @@ namespace Topebox.Tankwars
             {
                 Config.MapWidth = uiInput.GetComponent<UIInput>().res;
                 Config.MapHeight = uiInput.GetComponent<UIInput>().res;
+                Config.WallCount = uiInput.GetComponent<UIInput>().res;;
                 if (Config.MapWidth == 0)
                     Config.MapWidth = 10;
                 if (Config.MapHeight == 0)
@@ -405,12 +291,14 @@ namespace Topebox.Tankwars
                 setMap = true;
                 StartGame();
             }
+
             if (started && IsGameOver == false)
             {
                 StartCoroutine(Wait());
                 UpdateMove();
             }
         }
+
         IEnumerator Wait()
         {
             yield return new WaitForSeconds(1f);
@@ -440,14 +328,14 @@ namespace Topebox.Tankwars
 
         public TextMeshProUGUI TextScore;
 
-        public void UpdateScoreUI()
+        private void UpdateScoreUI()
         {
             TextScore.text = $"<color=red>{ScoreRed}</color> - <color=blue>{ScoreBlue}</color>";
         }
 
-        public Tank CreateTank(Constants.TankType tankType, int playerId)
+        private Tank1 CreateTank(Constants.TankType tankType, int playerId)
         {
-            var tank = Instantiate<Tank>(tankPrefab, new Vector3(0, 0, 0), Quaternion.identity,
+            var tank = Instantiate<Tank1>(tankPrefab, new Vector3(0, 0, 0), Quaternion.identity,
                 TankParent);
             tank.SetType(tankType);
             tank.SetId(playerId);
@@ -464,7 +352,7 @@ namespace Topebox.Tankwars
             return new Vector2(cellX, -cellY);
         }
 
-        public void UpdateMap()
+        private void UpdateMap()
         {
             for (int x = 0; x < Config.MapWidth; x++)
             {
@@ -475,7 +363,7 @@ namespace Topebox.Tankwars
             }
         }
 
-        public void GenerateMap()
+        private void GenerateMap()
         {
             //generate random symmetric wall
             for (int i = 0; i < Config.WallCount / 2; i++)
@@ -505,39 +393,6 @@ namespace Topebox.Tankwars
                     }
                 }
             }
-        }
-        public GameState ShallowCopy()
-        {
-            return (GameState) this.MemberwiseClone();
-        }
-
-        public GameState DeepCopy()
-        {
-            GameState other = (GameState) this.MemberwiseClone();
-            other.Player1Position = this.Player1Position;
-            other.Player2Position = this.Player2Position;
-            other.Config = this.Config;
-            other.uiInput = this.uiInput;
-            other.logicMap = this.logicMap;
-            other.displayMap = this.displayMap;
-            other.cellPrefab = this.cellPrefab;
-
-            other.tankPrefab = this.tankPrefab;
-            other.player1Tank = this.player1Tank;
-            other.player2Tank = this.player2Tank;
-            other.TankParent = this.TankParent;
-
-            other.CurrentPlayer = this.CurrentPlayer;
-            other.CurrentTurn = this.CurrentTurn;
-            other.Player1Moves = this.Player1Moves;
-            other.Player2Moves = this.Player2Moves;
-
-            other.IsGameOver = this.IsGameOver;
-            other.setMap = this.setMap;
-            other.started = this.started;
-            other.playerDone = this.playerDone;
-            other.CanMove = this.CanMove;
-            return other;
         }
     }
 }

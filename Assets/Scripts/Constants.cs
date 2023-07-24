@@ -7,7 +7,8 @@ namespace Topebox.Tankwars
             UP,
             LEFT,
             DOWN,
-            RIGHT
+            RIGHT, 
+            NO
         }
 
         public enum CellType

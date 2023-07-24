@@ -11,14 +11,15 @@ public class Menu : MonoBehaviour
     }
     public void PVsAI()
     {
-        SceneManager.LoadSceneAsync("SampleScene");
-    }
-    public void Exit()
-    {
-        SceneManager.LoadSceneAsync("SampleScene");
+        SceneManager.LoadSceneAsync("PvsAI");
     }
     public void OK()
     {
         SceneManager.LoadSceneAsync("Menu");
+    }
+
+    public void Exit()
+    {
+        Application.Quit();
     }
 }
