@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Input.unity
     guid: b56bce3ae3e2dd54e99bf9cfab09d18f
   - enabled: 1
@@ -17,4 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/PvsAI.unity
     guid: 1faea940fa03dae4397fc180fd71c00d
+  - enabled: 1
+    path: Assets/Scenes/PvsP.unity
+    guid: b7bd93cccc663f747a2495c61bdf08cf
   m_configObjects: {}

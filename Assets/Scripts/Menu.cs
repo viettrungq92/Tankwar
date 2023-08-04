@@ -13,6 +13,10 @@ public class Menu : MonoBehaviour
     {
         SceneManager.LoadSceneAsync("PvsAI");
     }
+    public void PVsP()
+        {
+            SceneManager.LoadSceneAsync("PvsP");
+        }
     public void OK()
     {
         SceneManager.LoadSceneAsync("Menu");
